@@ -77,6 +77,7 @@ class FileSearcher(QObject):
     completed = pyqtSignal()
     error = pyqtSignal(str)
     found_file = pyqtSignal(str)  # New signal for when a file is found
+    
 
     def __init__(self, directory):
         super().__init__()
@@ -105,10 +106,9 @@ class FileSearcher(QObject):
                 if file.endswith('.scpt' and '.py'): # Change this to the file extension you want to search for, in this case: .scpt .py .app
                     print(os.path.join(root, file)) # Print the path of the file
                     file_paths = os.path.join(root, file)
-                    self.found_file.emit(file_paths)  
-                    filepath_logdate = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                    self.found_file.emit(file_paths + "\n")  
                     f = open("filepaths.txt", "a")
-                    f.write("\n" + filepath_logdate + " " + os.path.join(root, file) + "\n") # Write the path of the file to a text file
+                    f.write("\n" + os.path.join(root, file) + "\n\n") # Write the path of the file to a text file
                     f.close()
                     
 
@@ -162,16 +162,108 @@ class FileCheckWindow(QWidget):
         self.progressBar.setRange(0, 1)
         self.progressBar.setValue(1)
         QMessageBox.information(self, "Search Results", "File Scan Completed!\nNow Scanning Viruses...")
-        FileCheckWindow.hide()
-        class VirusCheckWindow(QWidget):
-            def __init__(self):
+        
+
+        paths_file = "filepaths.txt"  # Path to the text file containing file paths
+        virus_signatures = {
+            "rickroll.prank.scpt.yt": 'open location "https://www.youtube.com/watch?v=dQw4w9WgXcQ"' or 'open location "https://www.youtube.com/watch?v=hWvM6de6mG8"' or 'open location "https://www.youtube.com/watch?v=xvFZjo5PgG0"' or 'open location "https://www.youtube.com/watch?v=V-_O7nl0Ii0"' or 'open location "https://www.youtube.com/watch?v=xfr64zoBTAQ"' or 'open location "https://www.youtube.com/watch?v=Yb6dZ1IFlKc"' or 'open location "https://www.youtube.com/watch?v=d1zB5WKYjTE"' or 'open location "https://www.youtube.com/watch?v=oHg5SJYRHA0"' or 'open location "https://www.youtube.com/watch?v=BT9h5ifR1tY"',
+            "rickroll.prank.scpt.alternate.bilibili": 'open location "https://www.bilibili.com/video/BV1724y1D7JV/?vd_source=319deeeab5d8234760871b0d2f4eeabb"' or 'open location "https://www.bilibili.com/video/BV1sS4y1f75H/?spm_id_from=333.337.search-card.all.click"' or 'open location "https://www.bilibili.com/video/BV1Pg411r7V5/?spm_id_from=333.337.search-card.all.click&vd_source=319deeeab5d8234760871b0d2f4eeabb"',
+            "rickroll.prank.py": "webbrowser.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ')" or "webbrowser.open('https://www.youtube.com/watch?v=hWvM6de6mG8')" or "webbrowser.open('https://www.youtube.com/watch?v=xvFZjo5PgG0')" or "webbrowser.open('https://www.youtube.com/watch?v=V-_O7nl0Ii0')" or "webbrowser.open('https://www.youtube.com/watch?v=xfr64zoBTAQ')" or "webbrowser.open('https://www.youtube.com/watch?v=Yb6dZ1IFlKc')" or "webbrowser.open('https://www.youtube.com/watch?v=d1zB5WKYjTE')" or "webbrowser.open('https://www.youtube.com/watch?v=oHg5SJYRHA0')" or "webbrowser.open('https://www.youtube.com/watch?v=BT9h5ifR1tY')",
+            "youtube.link.scpt": "youtube.com",
+            "youtube.link.py": "youtube.com",
+            "redirection.unknown.scpt": "open location",
+            "redirection.unknown.py": "webbrowser.open"
+        }
+        
+
+        
+        
+        
+        class VirusScanner(QObject):
+            update_progress = pyqtSignal(int, str)
+            completed = pyqtSignal()
+            found_virus = pyqtSignal(str)
+
+            def __init__(self, paths_file, virus_signatures):
                 super().__init__()
-                self.setWindowTitle("Virus Check")
+                self.paths_file = paths_file
+                self.virus_signatures = virus_signatures
+    
+            def run(self):
+                with open(self.paths_file, 'r') as f:
+                    file_paths = f.read().splitlines()
+
+                total_files = len(file_paths)
+                for i, file_path in enumerate(file_paths, 1):
+                    try:
+                        with open(file_path, 'r') as file:
+                            content = file.read()
+                            for virus_type, signature in self.virus_signatures.items():
+                                if signature in content:
+                                    self.found_virus.emit(f"\nVirus Type: {virus_type} found in: {file_path}\n")
+                                    filepath_logdate = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                                    f = open("viruseslog.txt", "a")
+                                    f.write(filepath_logdate + f"  Virus Type: {virus_type} // Path: {file_path}\n\n") # Write the path of the file to a text file
+                                    f.close()
+                                    
+                                    f = open("viruses.txt", "a")
+                                    f.write(f"{file_path}\n") # Write the path of the file to a text file
+                                    f.close()
+                                    break
+                    except Exception as e:
+                        pass  # Handle exceptions as needed
+
+                    progress = int((i / total_files) * 100)
+                    self.update_progress.emit(progress, f"{progress}%")
+
+                self.completed.emit()
+
+
+        
+        class VirusScanWindow(QWidget):
+            def __init__(self, paths_file):
+                super().__init__()
+                self.setWindowTitle("Virus Scan")
                 self.setFixedSize(550, 400)
                 layout = QVBoxLayout(self)
 
                 self.progressBar = QProgressBar(self)
-                self.progressBar.setRange(0, 0)
+                self.progressBar.setRange(0, 0)  # Indeterminate mode
+                layout.addWidget(self.progressBar)
+
+                self.results = QTextEdit(self)
+                self.results.setReadOnly(True)
+                layout.addWidget(self.results)
+
+
+                self.virus_scanner = VirusScanner(paths_file, virus_signatures)
+                self.virus_scanner.update_progress.connect(self.update_progress_bar)
+                self.virus_scanner.completed.connect(self.scan_completed)
+                self.virus_scanner.found_virus.connect(self.add_virus_found)
+                
+
+                self.start_scan()
+
+            def start_scan(self):
+                threading.Thread(target=self.virus_scanner.run, daemon=True).start()
+
+            def update_progress_bar(self, value, text):
+                self.progressBar.setRange(0, 100)
+                self.progressBar.setValue(value)
+                self.progressBar.setFormat(text)
+
+            def scan_completed(self):
+                self.progressBar.setRange(0, 1)
+                self.progressBar.setValue(1)
+                self.results.append("Scan completed.")
+                os.system("rm -rf filepaths.txt")
+
+            def add_virus_found(self, file_path):
+                self.results.append(f"{file_path}")
+                
+                
+        self.virus_scan_window = VirusScanWindow(paths_file)
+        self.virus_scan_window.show()
         
         pass
         
@@ -207,7 +299,7 @@ class SafeSphereX(QMainWindow):
         layout.addWidget(title)
 
         # Menu buttons
-        self.add_button(layout, "Check For Virus", self.open_virus_check_window)
+        self.add_button(layout, "Check For Virus", self.open_file_check_window)
         self.add_button(layout, "Whitelist", self.open_whitelist_window)
         self.add_button(layout, "About", self.open_about_window)
         self.add_button(layout, "Settings", self.open_settings_window)
@@ -230,10 +322,11 @@ class SafeSphereX(QMainWindow):
 
         layout.addWidget(button)
 
-    def open_virus_check_window(self):
+    def open_file_check_window(self):
 
         self.virus_check_window = FileCheckWindow()
         self.virus_check_window.show()
+    
 
         
 
