@@ -166,9 +166,6 @@ class FileCheckWindow(QWidget):
 
         paths_file = "filepaths.txt"  # Path to the text file containing file paths
         virus_signatures = {
-            "rickroll.prank.scpt.yt": 'open location "https://www.youtube.com/watch?v=dQw4w9WgXcQ"' or 'open location "https://www.youtube.com/watch?v=hWvM6de6mG8"' or 'open location "https://www.youtube.com/watch?v=xvFZjo5PgG0"' or 'open location "https://www.youtube.com/watch?v=V-_O7nl0Ii0"' or 'open location "https://www.youtube.com/watch?v=xfr64zoBTAQ"' or 'open location "https://www.youtube.com/watch?v=Yb6dZ1IFlKc"' or 'open location "https://www.youtube.com/watch?v=d1zB5WKYjTE"' or 'open location "https://www.youtube.com/watch?v=oHg5SJYRHA0"' or 'open location "https://www.youtube.com/watch?v=BT9h5ifR1tY"',
-            "rickroll.prank.scpt.alternate.bilibili": 'open location "https://www.bilibili.com/video/BV1724y1D7JV/?vd_source=319deeeab5d8234760871b0d2f4eeabb"' or 'open location "https://www.bilibili.com/video/BV1sS4y1f75H/?spm_id_from=333.337.search-card.all.click"' or 'open location "https://www.bilibili.com/video/BV1Pg411r7V5/?spm_id_from=333.337.search-card.all.click&vd_source=319deeeab5d8234760871b0d2f4eeabb"',
-            "rickroll.prank.py": "webbrowser.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ')" or "webbrowser.open('https://www.youtube.com/watch?v=hWvM6de6mG8')" or "webbrowser.open('https://www.youtube.com/watch?v=xvFZjo5PgG0')" or "webbrowser.open('https://www.youtube.com/watch?v=V-_O7nl0Ii0')" or "webbrowser.open('https://www.youtube.com/watch?v=xfr64zoBTAQ')" or "webbrowser.open('https://www.youtube.com/watch?v=Yb6dZ1IFlKc')" or "webbrowser.open('https://www.youtube.com/watch?v=d1zB5WKYjTE')" or "webbrowser.open('https://www.youtube.com/watch?v=oHg5SJYRHA0')" or "webbrowser.open('https://www.youtube.com/watch?v=BT9h5ifR1tY')",
             "youtube.link.scpt": "youtube.com",
             "youtube.link.py": "youtube.com",
             "redirection.unknown.scpt": "open location",
@@ -200,16 +197,41 @@ class FileCheckWindow(QWidget):
                             content = file.read()
                             for virus_type, signature in self.virus_signatures.items():
                                 if signature in content:
-                                    self.found_virus.emit(f"\nVirus Type: {virus_type} found in: {file_path}\n")
+                                    virus_type = str({virus_type})
+                                    file_path = str({file_path})
+                                    
+                                    if virus_type == "redirection.unknown.scpt" or "redirection.unknown.py" and "Application Support" not in file_path:
+                                        self.found_virus.emit(f"\nSuspicious Unknown Redirection found in: {file_path}\n")
+                                        pass
+                                    
+                                    if virus_type == "youtube.link.scpt" or "youtube.link.py" and "Application Support" not in file_path:
+                                        f = open(file_path, "r")
+                                        filecontent =  f.read()
+                                        if "dQw4w9WgXcQ" or "hWvM6de6mG8" or "xvFZjo5PgG0" or "V-_O7nl0Ii0" or "xfr64zoBTAQ" or "Yb6dZ1IFlKc" or "d1zB5WKYjTE" or "oHg5SJYRHA0" or "BT9h5ifR1tY" or "BV1724y1D7JV" or "BV1sS4y1f75H" or "BV1Pg411r7V5" in filecontent:
+                                            self.found_virus.emit(f"\nRickroll Prank found in: {file_path}\n")
+                                        else:
+                                            self.found_virus.emit(f"\nUnknown Youtube Redirection found in: {file_path}\n")
+                                        f.close()
+                                        pass
+
+                                    
+                                    
+                                    
+                                    #self.found_virus.emit(f"\nVirus Type: {virus_type} found in: {file_path}\n") (General Virus Type Scan)
+                                    
                                     filepath_logdate = strftime("%Y-%m-%d %H:%M:%S", gmtime())
                                     f = open("viruseslog.txt", "a")
                                     f.write(filepath_logdate + f"  Virus Type: {virus_type} // Path: {file_path}\n\n") # Write the path of the file to a text file
+                                    print("write1")
                                     f.close()
                                     
                                     f = open("viruses.txt", "a")
                                     f.write(f"{file_path}\n") # Write the path of the file to a text file
+                                    print("write2")
                                     f.close()
-                                    break
+                            
+                                    
+                                    #"break" here if needed
                     except Exception as e:
                         pass  # Handle exceptions as needed
 
